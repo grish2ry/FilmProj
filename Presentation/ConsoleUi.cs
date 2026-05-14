@@ -1,6 +1,6 @@
 namespace Presentation;
 using Domain;
-public class ConsoleUi
+public class ConsoleUi : IUi
 {
     public void DisplayMenu()
     {
@@ -58,5 +58,15 @@ public class ConsoleUi
         }
     }
 
+    public void LogError(string msg)
+    {
+        Console.WriteLine($"[ERROR] : {msg}");
+    }
 
+    public void PrintSingle(string msg)
+    {
+        Console.WriteLine(msg);
+    }
 }
+
+

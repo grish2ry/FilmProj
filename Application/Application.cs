@@ -1,64 +1,36 @@
 using Domain;
 using Presentation;
-using Infrostruture.Readers;
 using Infrostruture.RecomendationServices;
 using Infrostruture.Api;
+using Infrostruture.Loggers;
+using AppFilm.Helpers;
+namespace AppFilm;
 public class App
 {
     public Dictionary<string, List<Film>> PersonInFilms {get; private set;}
     public Dictionary<string, List<Film>> FilmByTag {get; private set;}
     public Dictionary<string, List<Film>> FilmByName {get; private set;}
     public HashSet<Film> Films {get; private set; }
+    public IDescriptionService DescriptionService {get; private set;}
 
-    public ImdbDescriptionService DescriptionService {get; private set;}
+    public IAppLogger Logger {get; private set;}
+
+    public AppHelper Helper {get; private set;}
 
     private RecomendationService recomendationService;
-    private ConsoleUi ui;
-    public App()
+    private IUi Ui;
+    public App(
+        IUi ui,
+        IAppLogger logger,
+        IDescriptionService descriptionService,
+        AppHelper helper,
+        HashSet<Film> films)
     {
-        HttpClient c = new HttpClient();
-        DescriptionService = new ImdbDescriptionService(c, "6e7cf0d1");
-        
-        ui = new ConsoleUi();
-        
-        Console.WriteLine("ajkbsd");
-        var filmById = new Dictionary<long, Film>();
-
-        Console.WriteLine("ajkbsd");
-        var movieImbdReader = new MovieImbdReader(filmById);
-        movieImbdReader.ReadImbd();
-
-
-        Console.WriteLine("ajkbsd");
-        var raitingReader = new RaitingReader(filmById);
-        raitingReader.ReadRaiting();
-
-
-        Console.WriteLine("ajkbsd");
-        var peopleNamesReader = new PeopleNamesReader(filmById);
-        peopleNamesReader.ReadNames();
-
-
-        Console.WriteLine("ajkbsd");
-        var peopleRolesReader = new PeopleRolesReader(filmById, peopleNamesReader.PersonById);
-        peopleRolesReader.ReadRoles();
-
-        Console.WriteLine("ajkbsd");
-
-        var imbdToMovieCode = new ImbdToMovieCode(filmById);
-        imbdToMovieCode.Convert();
-
-        Console.WriteLine("ajkbsd");
-
-        var tagCodeReader = new TagCodeReader();
-        tagCodeReader.ReadTags();
-
-        Console.WriteLine("ajkbsd");
-
-        var tagsApplyer = new TagsApplyer(tagCodeReader.TagCode, filmById, imbdToMovieCode.CodeConvertor);
-        tagsApplyer.ApplyTags();
-
-        Films = new HashSet<Film>(filmById.Values);
+        Ui = ui;
+        Logger = logger;
+        DescriptionService = descriptionService;
+        Helper = helper;
+        Films = films;
 
         recomendationService = new RecomendationService(Films.ToList());
 
@@ -152,51 +124,46 @@ public class App
     }
     public void Run()
     {
-        ui.DisplayMenu();
-        
+        Ui.DisplayMenu();        
         while (true)
         {
-            
-
             var s = Console.ReadKey(true);
             switch (s.KeyChar)
             {
                 case '1':
-                    ui.FilmByPerson();
+                    Ui.FilmByPerson();
                     var name = (Console.ReadLine() ?? string.Empty).Trim();
                     if (PersonInFilms.TryGetValue(name, out var f)){
                         recomendationService.AddSeenFilms(f);
-                        ui.PrintFilms(f);
+                        Ui.PrintFilms(f);
                     }
                     else
                     {
-                        Console.WriteLine("Person not found");
+                        Logger.LogErrorMessage("Person not found");
                     }
                     Thread.Sleep(3000);
-                    Console.Clear();
-                    ui.DisplayMenu();
+                    Ui.DisplayMenu();
 
 
                     break;
                 case '2':
-                    ui.FilmByTag();
+                    Ui.FilmByTag();
                     var tag = (Console.ReadLine() ?? string.Empty).Trim();
                     if (FilmByTag.TryGetValue(tag, out var films))
                     {
                         recomendationService.AddSeenFilms(films);
-                        ui.PrintFilms(films);
+                        Ui.PrintFilms(films);
                     }
                     else
                     {
-                        Console.WriteLine("Tag not found");
+                        Logger.LogErrorMessage("Tag not found");
                     }
                     Thread.Sleep(3000);
-                    Console.Clear();
-                    ui.DisplayMenu();
+                    Ui.DisplayMenu();
 
                     break;
                 case '3':
-                    ui.FilmInfo();
+                    Ui.FilmInfo();
                     var film = (Console.ReadLine() ?? string.Empty).Trim();
                     Film? fi = null;
                     if (FilmByName.TryGetValue(film, out var filmMatches))
@@ -205,8 +172,7 @@ public class App
                     }
                     if (fi == null)
                     {
-                        var key = FilmByName.Keys.FirstOrDefault(k =>
-                            k.Contains(film, StringComparison.OrdinalIgnoreCase));
+                        var key = FilmByName.Keys.FirstOrDefault(k => k.Contains(film, StringComparison.OrdinalIgnoreCase));
                         if (key != null)
                         {
                             fi = FilmByName[key].FirstOrDefault();
@@ -214,37 +180,34 @@ public class App
                     }
                     if (fi == null)
                     {
-                        Console.WriteLine("Film not found");
+                        Logger.LogErrorMessage("Film not found");
                         Thread.Sleep(3000);
-                        Console.Clear();
-                        ui.DisplayMenu();
+                        Ui.DisplayMenu();
                         break;
                     }
 
-                    fi.Display(ui);
+                    fi.Display(Ui);
                     var description = DescriptionService.GetDescription($"tt{fi.ImdbId:D7}").GetAwaiter().GetResult();
                     if (string.IsNullOrWhiteSpace(description))
                     {
-                        Console.WriteLine("Description not available");
+                        Logger.LogErrorMessage("Description not available");
                     }
                     else
                     {
-                        Console.WriteLine(description);
+                        Ui.PrintSingle(description);
                     }
                     recomendationService.AddSeenFilms(new List<Film> { fi });
                     
                     Thread.Sleep(3000);
-                    Console.Clear();
-                    ui.DisplayMenu();
+                    Ui.DisplayMenu();
                     break;
                 case '4':
-                    ui.RecomendationMenu();
+                    Ui.RecomendationMenu();
                     
                     var recommend = recomendationService.Recommend();
-                    ui.PrintFilms(recommend);
+                    Ui.PrintFilms(recommend);
                     Thread.Sleep(3000);
-                    Console.Clear();
-                    ui.DisplayMenu();
+                    Ui.DisplayMenu();
                     break;
                 case '5':
                     return;

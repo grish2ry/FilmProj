@@ -17,7 +17,6 @@ public class PeopleRolesReader
     public void ReadRoles(string path = "BD\\ml-latest\\ActorsDirectorsCodes_IMDB.tsv")
     {
         var lines = new BlockingCollection<string>(10000);
-        var dict = new ConcurrentDictionary<long, Person>();
 
         var reader = Task.Run(() =>
         {

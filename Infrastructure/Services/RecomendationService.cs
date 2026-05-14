@@ -32,13 +32,12 @@ public class RecomendationService
         var candidates = BuildCandidates(seenSet);
         if (candidates.Count == 0) return new List<Film>();
 
-        var top = candidates
-            .Select(c => new { Film = c, Score = CalculateScore(c, seenSet) })
-            .Where(x => x.Score > 0)
-            .OrderByDescending(x => x.Score)
-            .Take(10)
-            .Select(x => x.Film)
-            .ToList();
+        var top = candidates.Select(c => new { Film = c, Score = CalculateScore(c, seenSet) })
+        .Where(x => x.Score > 0)
+        .OrderByDescending(x => x.Score)
+        .Take(10)
+        .Select(x => x.Film)
+        .ToList();
 
         return top;
     

@@ -32,6 +32,7 @@ public class PeopleNamesReader
         {
             foreach (var line in lines.GetConsumingEnumerable())
             {
+                var span = line.AsSpan();
                 var t1 = line.IndexOf('\t');
                 if (t1 < 0) continue;
 
@@ -47,14 +48,14 @@ public class PeopleNamesReader
                 var t5 = line.IndexOf('\t', t4 + 1);
                 if (t5 < 0) continue;
 
-                var idRaw = line.Substring(0, t1);
-                if (!TryParsePersonId(idRaw, out var id)) continue;
+                if (!TryParsePersonId(span.Slice(0, t1), out var id)) continue;
 
-                var fullName = line.Substring(t1 + 1, t2 - t1 - 1);
+                var fullName = span.Slice(t1 + 1, t2 - t1 - 1);
+                if (fullName.IsEmpty) continue;
 
                 var t6 = fullName.IndexOf(' ');
-                var name = t6 > 0 ? fullName.Substring(0, t6) : fullName;
-                var surname = t6 > 0 ? fullName.Substring(t6 + 1) : string.Empty;
+                var name = (t6 > 0 ? fullName.Slice(0, t6) : fullName).ToString();
+                var surname = t6 > 0 ? fullName.Slice(t6 + 1).ToString() : string.Empty;
                 dict.GetOrAdd(id, _ => new Person(name, surname, id));
 
 
@@ -68,11 +69,11 @@ public class PeopleNamesReader
 
     }
 
-    private static bool TryParsePersonId(string raw, out long id)
+    private static bool TryParsePersonId(ReadOnlySpan<char> raw, out long id)
     {
         id = 0;
-        if (string.IsNullOrWhiteSpace(raw)) return false;
-        var s = raw.StartsWith("nm", StringComparison.OrdinalIgnoreCase) ? raw[2..] : raw;
+        if (raw.IsEmpty) return false;
+        var s = raw.StartsWith("nm".AsSpan(), StringComparison.OrdinalIgnoreCase) ? raw[2..] : raw;
         return long.TryParse(s, out id);
     }
 

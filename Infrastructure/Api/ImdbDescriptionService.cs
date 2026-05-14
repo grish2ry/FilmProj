@@ -2,20 +2,25 @@ using System;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Infrostruture.Loggers;
 namespace Infrostruture.Api;
 
-public class ImdbDescriptionService
+public class ImdbDescriptionService : IDescriptionService
 {
     private string apiKey_;
     private readonly HttpClient client_;
     private readonly int retries_;
     private readonly int delay_;
-    public ImdbDescriptionService(HttpClient client, string apiKey, int retries = 3, int delay = 100)
+
+    private readonly IAppLogger logger;
+
+    public ImdbDescriptionService(HttpClient client, IAppLogger logger, string apiKey, int retries = 3, int delay = 100)
     {
         client_ = client;
         apiKey_ = apiKey;
         retries_ = retries;
         delay_ = delay;
+        this.logger = logger;
     }
 
     public async Task<string?> GetDescription(string imdbId, CancellationToken ct = default)
@@ -29,7 +34,7 @@ public class ImdbDescriptionService
             }
             catch(Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                logger.LogErrorMessage(ex.Message);
             }
             if(r != null && !string.IsNullOrEmpty(r?.Plot))
             {
