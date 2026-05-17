@@ -42,22 +42,22 @@ public class Film
         }
     }
 
-    public void Display(ConsoleUi ui)
+    public void Display(IUi ui)
     {
-        Console.WriteLine(Title);
-        Console.WriteLine(Rating);
+        ui.PrintSingle($"Title: {Title}");
+        ui.PrintSingle($"Rating: {Rating}");
 
-        Console.WriteLine("Director:");
+        ui.PrintSingle("Director:");
         if (Director != null)
-            Console.WriteLine($"{Director.Name} {Director.Surname}".Trim());
+            ui.PrintSingle($"{Director.Name} {Director.Surname}".Trim());
         else
-            Console.WriteLine("No data");
+            ui.PrintSingle("No data");
 
-        Console.WriteLine("Actors:");
+        ui.PrintSingle("Actors:");
         if (Actors != null && Actors.Count > 0)
             ui.PrintActors(Actors);
         else
-            Console.WriteLine("No data");
+            ui.PrintSingle("No data");
     }
 
 };
